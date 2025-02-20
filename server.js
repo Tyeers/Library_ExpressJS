@@ -4,12 +4,14 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const User = require("./models/User");
+const categoriesRouter = require('./routes/categories');
 
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use('/api/categories', categoriesRouter);
 
 // **SIGNUP**
 app.post("/signup", async (req, res) => {
