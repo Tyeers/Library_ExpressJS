@@ -3,14 +3,23 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const { Sequelize } = require("./models");
+const authMiddleware = require("./middleware/authMiddleware");
+
+// Import models
 const User = require("./models/User");
+const Loan = require("./models/Loan");
+
+// Import routers
 const categoriesRouter = require('./routes/categories');
 
 const app = express();
 
-// Middleware
+// **Middleware**
 app.use(express.json());
 app.use(cors());
+
+// **Routes**
 app.use('/api/categories', categoriesRouter);
 
 // **SIGNUP**
@@ -32,7 +41,7 @@ app.post("/signup", async (req, res) => {
 
         res.status(201).json({ message: "User registered successfully", user: newUser });
     } catch (error) {
-        res.status(500).json({ message: "Error occurred", error });
+        res.status(500).json({ message: "Error occurred", error: error.message });
     }
 });
 
@@ -62,24 +71,55 @@ app.post("/login", async (req, res) => {
 
         res.status(200).json({ token, userId: user.id, email: user.email });
     } catch (error) {
-        res.status(500).json({ message: "Error occurred", error });
+        res.status(500).json({ message: "Error occurred", error: error.message });
     }
 });
 
-const authMiddleware = require("./middleware/authMiddleware");
-
+// **GET PROFILE (Protected)**
 app.get("/profile", authMiddleware, async (req, res) => {
     try {
         const user = await User.findByPk(req.user.userId, { attributes: { exclude: ["password"] } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
         res.status(200).json(user);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching user data" });
+        res.status(500).json({ message: "Error fetching user data", error: error.message });
     }
 });
 
+// **CREATE LOAN**
+app.post('/api/loan/create', authMiddleware, async (req, res) => {
+    try {
+        const { book_id, user_id, loan_date, return_date, status } = req.body;
 
-// **Port**
+        // Validasi input
+        if (!book_id || !user_id || !loan_date || !return_date || !status) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // Simpan data pinjaman menggunakan Sequelize Model
+        const newLoan = await Loan.create({
+            book_id,
+            user_id,
+            loan_date,
+            return_date,
+            status
+        });
+
+        res.status(201).json({ message: "Loan created successfully", loan: newLoan });
+    } catch (error) {
+        res.status(500).json({ message: "Error creating loan", error: error.message });
+    }
+});
+
+// **Database Sync**
+Sequelize.sync()
+    .then(() => console.log("✅ Database synchronized"))
+    .catch(err => console.log("❌ Error: " + err));
+
+// **Start Server**
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
