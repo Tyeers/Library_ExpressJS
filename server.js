@@ -3,7 +3,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
-const { Sequelize } = require("./models");
+const sequelize = require("./config/database");
 const authMiddleware = require("./middleware/authMiddleware");
 
 // Import models
@@ -12,6 +12,9 @@ const Loan = require("./models/Loan");
 
 // Import routers
 const categoriesRouter = require('./routes/categories');
+const loansRouter = require('./routes/loans');
+const reviewsRouter = require('./routes/reviews');
+const booksRouter = require('./routes/books');
 
 const app = express();
 
@@ -21,6 +24,9 @@ app.use(cors());
 
 // **Routes**
 app.use('/api/categories', categoriesRouter);
+app.use('/api/loans', loansRouter);
+app.use('/api/reviews', reviewsRouter);
+app.use('/api/books', booksRouter);
 
 // **SIGNUP**
 app.post("/signup", async (req, res) => {
